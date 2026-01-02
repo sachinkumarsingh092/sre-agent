@@ -1,0 +1,37 @@
+EXAMPLE INPUTS AND OUTPUTS
+
+THESE EXAMPLES ARE FOR DIAGNOSIS
+
+INPUT: Get the yaml file for the deployment called back in the default namespace.
+OUTPUT: ```bash\nkubectl get deployment back -o yaml --kubeconfig k8s/custom-kubeconfig.yaml\n```
+
+INPUT: Get the logs from the pod 123xyz in the complexdd namespace.
+OUTPUT: ```bash\nkubectl logs 123xyz -n complexdd --kubeconfig k8s/custom-kubeconfig.yaml \n```
+
+INPUT: get all the services in the abc789 namespace
+OUTPUT: ```bash\nkubectl get services -n abc789 --kubeconfig k8s/custom-kubeconfig.yaml\n```
+
+INPUT: describe the pod lol123 in the abc789 namespace
+OUTPUT: ```bash\nkubectl describe pod lol123 -n abc789 --kubeconfig k8s/custom-kubeconfig.yaml\n```
+
+INPUT: Get the events related to the deployment "my-deployment" in the "production" namespace.
+OUTPUT: ```bash\nkubectl get events -n production --field-selector metadata.name=my-deployment --kubeconfig k8s/custom-kubeconfig.yaml\n```
+
+THESE EXAMPLES ARE FOR REMEDIATION
+
+INPUT: Execute the command `ls -l` in the container named "web" of the pod "my-pod" in the "staging" namespace.
+OUTPUT: ```bash\nkubectl exec -it -n staging my-pod -c web -- ls -l --kubeconfig k8s/custom-kubeconfig.yaml\n```
+
+INPUT: Delete the pod named "crashing-pod" in the "production" namespace, forcing Kubernetes to recreate it.
+OUTPUT: ```bash\nkubectl delete pod crashing-pod -n production --force --grace-period=0 --kubeconfig k8s/custom-kubeconfig.yaml\n```
+
+INPUT: Edit the deployment "my-app" in the "staging" namespace to increase the resource limits for the container "main" to 2 CPUs and 4Gi of memory.
+OUTPUT: ```bash\nkubectl edit deployment/my-app -n staging --kubeconfig k8s/custom-kubeconfig.yaml # Then manually edit the resource limits in the editor\n```
+
+INPUT: Patch the deployment "frontend-api" in the "production" namespace to update the image of the container named "api-container" to "api-image:2.0" to fix a bug.
+OUTPUT: ```bash\nkubectl patch deployment/frontend-api -n production --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"api-image:2.0"}]' --kubeconfig k8s/custom-kubeconfig.yaml\n```
+
+INPUT: Patch the deployment "data-processor" in the "data" namespace to increase the CPU request for the container named "processor" to "500m" to ensure it has more guaranteed CPU resources.
+OUTPUT: ```bash\nkubectl patch deployment/data-processor -n data --patch '{"spec": {"template": {"spec": {"containers": [{"name": "processor", "resources": {"requests": {"cpu": "500m"}}}]}}}}' --kubeconfig k8s/custom-kubeconfig.yaml\n```
+
+END OF EXAMPLES

@@ -1,0 +1,33 @@
+# SRE Agent MVP Configuration
+
+# vLLM endpoint configuration
+llm:
+  base_url: "http://142.93.153.86:8000/v1"
+  model: "openai/gpt-oss-120b"
+  temperature: 0.0
+  max_tokens: 8192
+  # Reasoning model settings
+  is_reasoning_model: true
+  reasoning_effort: "low"  # low, medium, or high - use low to avoid "too many messages" error
+
+# Kubernetes configuration
+kubernetes:
+  kubeconfig: "/Users/sachinsingh/dev/sachinkumarsingh092/sre-agent/sre-agent-mvp/k8s/custom-kubeconfig.yaml"
+  namespace: "default"
+
+# Prometheus/AlertManager configuration
+prometheus:
+  url: "http://localhost:9090"
+  alertmanager_url: "http://localhost:9093"
+
+# Agent configuration
+agent:
+  max_retries: 3
+  retry_sleep_seconds: 30
+  validation_wait_seconds: 15
+  output_directory: "./output"
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

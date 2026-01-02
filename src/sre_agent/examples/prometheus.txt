@@ -1,0 +1,27 @@
+EXAMPLE INPUTS AND OUTPUTS
+
+INPUT: get the memory utilization of a pod-123 in namespace simple-us
+OUTPUT: ```promql\nsum(container_memory_usage_bytes{image!='',container!='',pod="pod-123",namespace="simple-us"})\n```
+
+INPUT: get the requests of a pod-123 in namespace simple-us
+OUTPUT: ```promql\navg(kube_pod_container_resource_requests{resource='cpu', pod='pod-123', namespace='simple-us'})\n```
+
+INPUT: get the limits of a pod-123 in namespace simple-us
+OUTPUT: ```promql\navg(kube_pod_container_resource_limits{resource='cpu', pod='pod-123', namespace='simple-us'})\n```
+
+INPUT: get the memory utilization by a deployment front in namespace simple-us
+OUTPUT: ```promql\nsum(rate(container_memory_usage_bytes{namespace="simple-us", pod=~"front-.*"}[5m])) by (namespace) / sum(kube_pod_container_resource_limits{namespace="simple-us", resource="memory", pod=~"front-.*"}) by (namespace)\n```
+
+INPUT: get the throttle ratio for a deployment front in namespace simple-us
+OUTPUT: ```promql\n(sum(increase(container_cpu_cfs_throttled_periods_total{namespace="simple-us", container=~"front.*"}[5m])) by (namespace) / sum(increase(container_cpu_cfs_periods_total{namespace="simple-us", container=~"front.*"}[5m])) by (namespace))\n```
+
+INPUT: get the CPU usage of a pod-456 in namespace complex-us
+OUTPUT: ```promql\nsum(rate(container_cpu_usage_seconds_total{pod="pod-456", namespace="complex-us"}[5m]))\n```
+
+INPUT: get the memory usage of a node-789
+OUTPUT: ```promql\nsum(node_memory_MemTotal_bytes{node="node-789"}) - sum(node_memory_MemAvailable_bytes{node="node-789"})\n```
+
+INPUT: get the network received bytes of a pod-789 in namespace simple-us
+OUTPUT: ```promql\nrate(container_network_receive_bytes_total{pod="pod-789", namespace="simple-us"}[5m])\n```
+
+END OF EXAMPLES

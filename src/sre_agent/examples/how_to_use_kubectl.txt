@@ -1,0 +1,13 @@
+DIAGNOSIS
+Here are examples of queries you could ask the NL2Kubectl Tool:
+get the yaml file for the deployment called back in the default namespace
+get the logs from the pod 123xyz in the complexdd namespace
+get all the services in the abc789 namespace
+describe the pod lol123 in the abc789 namespace
+
+REMEDIATION
+Patch the deployment "frontend-api" in the "production" namespace to update the image of the container named "api-container" to "api-image:2.0" to fix a bug.
+Patch the deployment "data-processor" in the "data" namespace to increase the CPU request for the container named "processor" to "500m" to ensure it has more guaranteed CPU resources.
+Edit the deployment "my-app" in the "staging" namespace to increase the resource limits for the container "main" to 2 CPUs and 4Gi of memory.
+Delete the pod named "crashing-pod" in the "production" namespace, forcing Kubernetes to recreate it.
+Execute the command `ls -l` in the container named "web" of the pod "my-pod" in the "staging" namespace.

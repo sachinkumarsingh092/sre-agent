@@ -1,0 +1,4 @@
+Here are examples of queries you could ask the NL2Metrics Tool:
+get the average CPU usage of a pod-456 in namespace complex-us over the last hour
+get the network received bytes of a pod-789 in namespace simple-us over the last 10 minutes
+get the total memory utilization by the deployment called front in namespace simple-us currently
