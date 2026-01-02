@@ -4,7 +4,7 @@ Lightweight Kubernetes SRE Agent for incident diagnosis and mitigation using loc
 
 ## Features
 
-- **Local LLM**: Uses vLLM with Qwen2.5-7B-Instruct (no external API dependencies)
+- **Local LLM**: Uses vLLM with openai/gpt-oss-120b (no external API dependencies)
 - **Kubernetes Operations**: Pod-level diagnosis and mitigation with rollback support
 - **Prometheus Integration**: Alert detection and metric queries
 - **Fail-Fast**: Validates all connections on startup
@@ -15,9 +15,9 @@ Lightweight Kubernetes SRE Agent for incident diagnosis and mitigation using loc
 
 ### Prerequisites
 
-1. **vLLM** running locally with Qwen2.5-7B-Instruct:
+1. **vLLM** running locally with openai/gpt-oss-120b:
    ```bash
-   vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000
+   vllm serve openai/gpt-oss-120b --gpu-memory-utilization 0.95   --enforce-eager   --max-model-len 16384
    ```
 
 2. **Kubernetes cluster** (kind, minikube, or remote) with kubeconfig
@@ -38,7 +38,7 @@ Edit `config.yaml` to match your environment:
 ```yaml
 llm:
   base_url: "http://localhost:8000/v1"
-  model: "Qwen/Qwen2.5-7B-Instruct"
+  model: "openai/gpt-oss-120b"
 
 kubernetes:
   kubeconfig: "~/.kube/config"
