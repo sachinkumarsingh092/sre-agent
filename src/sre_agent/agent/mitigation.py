@@ -139,6 +139,8 @@ class MitigationAgent(SREAgent):
                         return self._save_and_return()
                     else:
                         log_warning(logger, f"Validation failed: {validation_result.message}")
+                        # Rollback actions from this attempt
+                        self._rollback_all_actions()
                 
                 # Mitigation failed - add reflection
                 if attempt < self.config.agent.max_retries - 1:
@@ -157,11 +159,21 @@ class MitigationAgent(SREAgent):
                     error=str(e),
                 ))
         
-        # All retries exhausted
+        # All retries exhausted - rollback any remaining actions
+        self._rollback_all_actions()
         self.incident.set_status(IncidentStatus.FAILED)
         log_error(logger, "Mitigation failed after all retries")
         
         return self._save_and_return()
+
+    def _rollback_all_actions(self) -> None:
+        """Rollback all actions from the stack."""
+        rollback_count = 0
+        while self.action_stack.stack:
+            if self.rollback_last_action():
+                rollback_count += 1
+        if rollback_count > 0:
+            log_warning(logger, f"Rolled back {rollback_count} action(s)")
 
     def _run_mitigation(self, alert: Alert, diagnosis: Diagnosis) -> bool:
         """

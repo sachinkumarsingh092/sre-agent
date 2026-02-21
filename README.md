@@ -1,4 +1,4 @@
-# SRE Agent MVP
+# SRE Agent
 
 Lightweight Kubernetes SRE Agent for incident diagnosis and mitigation using local vLLM.
 
@@ -17,7 +17,9 @@ Lightweight Kubernetes SRE Agent for incident diagnosis and mitigation using loc
 
 1. **vLLM** running locally with openai/gpt-oss-120b:
    ```bash
-   vllm serve openai/gpt-oss-120b --gpu-memory-utilization 0.95   --enforce-eager   --max-model-len 16384
+   $ uv pip install vllm==0.10.1   --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
+   $ apt-get install python3-dev
+   $ vllm serve openai/gpt-oss-120b --gpu-memory-utilization 0.95   --enforce-eager   --max-model-len 16384
    ```
 
 2. **Kubernetes cluster** (kind, minikube, or remote) with kubeconfig
@@ -27,8 +29,7 @@ Lightweight Kubernetes SRE Agent for incident diagnosis and mitigation using loc
 ### Installation
 
 ```bash
-cd sre-agent-mvp
-pip install -e .
+uv pip install -e .
 ```
 
 ### Configuration
@@ -37,7 +38,7 @@ Edit `config.yaml` to match your environment:
 
 ```yaml
 llm:
-  base_url: "http://localhost:8000/v1"
+  base_url: "http://<droplet-ip>:8000/v1"
   model: "openai/gpt-oss-120b"
 
 kubernetes:
@@ -75,6 +76,9 @@ sre-agent --once
 
 # Skip connection validation (for testing)
 sre-agent --skip-validation
+
+# Process alerts and exit after 2 idle checks (about 1 minute)
+sre-agent --exit-on-idle 2
 ```
 
 ## Architecture
@@ -195,11 +199,11 @@ sre-agent-mvp/
         └── ...
 ```
 
-## Compared to stratus-agent
+## Compared to SOTA
 
-This MVP is a simplified version of stratus-agent:
+This MVP is a simplified version of SOTA:
 
-| Feature | stratus-agent | sre-agent-mvp |
+| Feature | SOTA | sre-agent-mvp |
 |---------|--------------|---------------|
 | LLM Backend | LiteLLM (multi-provider) | vLLM only |
 | Agent Framework | CrewAI (multi-agent) | Custom (single agent) |

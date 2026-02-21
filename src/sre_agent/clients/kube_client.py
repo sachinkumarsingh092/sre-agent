@@ -14,7 +14,7 @@ from ..config import KubernetesConfig
 logger = logging.getLogger("sre_agent.kube")
 
 
-# Command safety classification (from stratus-agent)
+# Command safety classification
 KUBECTL_SAFE_COMMANDS = [
     "kubectl annotate",
     "kubectl api-resources",

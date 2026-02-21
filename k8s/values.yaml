@@ -1,0 +1,24 @@
+# Disable HA-only alert rules
+defaultRules:
+  disabled:
+    Watchdog: true
+  rules:
+    etcd: false
+    kubeScheduler: false
+    kubeControllerManager: false
+    kubeProxy: false
+
+# Disable scraping of control-plane components
+kubeEtcd:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+kubeControllerManager:
+  enabled: false
+
+kubeProxy:
+  enabled: false
+
+
