@@ -25,6 +25,7 @@ from ..mitigation import (
     ClusterHealthOracle,
     CompositeOracle,
     ValidationResult,
+    SeverityCalculator,
 )
 from ..examples import get_kubectl_examples
 from ..logging_config import log_step, log_reasoning, log_action, log_success, log_error, log_warning
@@ -74,6 +75,9 @@ class MitigationAgent(SREAgent):
         
         # Action stack for rollback
         self.action_stack = ActionStack()
+        
+        # Severity calculator for TNR (regression detection)
+        self.severity_calculator = SeverityCalculator(self.prometheus, self.kube)
     
     def process_alert(self, alert: Alert) -> IncidentState:
         """
@@ -118,11 +122,46 @@ class MitigationAgent(SREAgent):
         # Run mitigation with retry
         self.incident.set_status(IncidentStatus.MITIGATING)
         
+        # Determine target namespace for severity calculation
+        target_namespace = alert.namespace or self.config.kubernetes.namespace
+        
         for attempt in range(self.config.agent.max_retries):
             log_step(logger, f"Mitigation Attempt {attempt + 1}/{self.config.agent.max_retries}")
             
             try:
+                # Capture pre-mitigation severity
+                pre_severity = self.severity_calculator.calculate(target_namespace)
+                logger.info(f"Pre-mitigation severity: {pre_severity}")
+                self.incident.add_timeline_entry(TimelineEntry.create(
+                    action_type=ActionType.VALIDATION,
+                    description=f"Pre-mitigation severity: {pre_severity}",
+                    output_data=pre_severity.to_dict(),
+                ))
+                
                 success = self._run_mitigation(alert, diagnosis)
+                
+                # Capture post-mitigation severity
+                post_severity = self.severity_calculator.calculate(target_namespace)
+                logger.info(f"Post-mitigation severity: {post_severity}")
+                
+                # Check for regression
+                severity_comparison = self.severity_calculator.compare(pre_severity, post_severity)
+                self.incident.add_timeline_entry(TimelineEntry.create(
+                    action_type=ActionType.VALIDATION,
+                    description=f"Post-mitigation severity: {post_severity} ({severity_comparison['status']})",
+                    output_data=severity_comparison,
+                ))
+                
+                if post_severity.is_worse_than(pre_severity):
+                    log_warning(logger, f"REGRESSION DETECTED: {severity_comparison['message']}")
+                    # Rollback due to regression
+                    self._rollback_all_actions()
+                    if attempt < self.config.agent.max_retries - 1:
+                        reflection = f"Mitigation caused regression. {severity_comparison['message']}"
+                        self.incident.add_reflection(reflection)
+                        log_warning(logger, f"Attempt {attempt + 1} caused regression, will retry...")
+                        time.sleep(self.config.agent.retry_sleep_seconds)
+                    continue
                 
                 if success:
                     # Validate the fix
@@ -135,7 +174,7 @@ class MitigationAgent(SREAgent):
                     
                     if validation_result.success:
                         self.incident.set_status(IncidentStatus.RESOLVED)
-                        log_success(logger, "Mitigation successful - alerts cleared")
+                        log_success(logger, f"Mitigation successful - alerts cleared (severity: {pre_severity.score} -> {post_severity.score})")
                         return self._save_and_return()
                     else:
                         log_warning(logger, f"Validation failed: {validation_result.message}")

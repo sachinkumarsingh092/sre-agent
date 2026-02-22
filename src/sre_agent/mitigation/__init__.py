@@ -8,6 +8,7 @@ from .oracle import (
     ClusterHealthOracle,
     CompositeOracle,
 )
+from .severity import SeverityMetric, SeverityCalculator
 
 __all__ = [
     "ActionStack",
@@ -18,4 +19,6 @@ __all__ = [
     "AlertsClearedOracle",
     "ClusterHealthOracle",
     "CompositeOracle",
+    "SeverityMetric",
+    "SeverityCalculator",
 ]
