@@ -208,7 +208,7 @@ class MitigationAgent(SREAgent):
     def _rollback_all_actions(self) -> None:
         """Rollback all actions from the stack."""
         rollback_count = 0
-        while not self.action_stack.is_empty():
+        while self.action_stack.stack:
             if self.rollback_last_action():
                 rollback_count += 1
         if rollback_count > 0:
