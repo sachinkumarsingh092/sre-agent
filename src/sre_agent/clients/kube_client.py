@@ -178,6 +178,14 @@ class KubeClient:
         if not command.strip().startswith("kubectl"):
             return False, "Only kubectl commands are allowed"
         
+        # Block compound commands (&&, ||, ;) - prevents command chaining attacks
+        if " && " in command or " || " in command or " ; " in command:
+            return False, "Compound commands (&&, ||, ;) are not supported"
+        
+        # Block stdin input - prevents arbitrary YAML injection
+        if " -f -" in command or " -f-" in command or "< " in command:
+            return False, "Stdin input (-f -, <) is not supported"
+        
         safety = self.classify_command(command)
         
         if safety == CommandSafety.UNSUPPORTED:

@@ -7,6 +7,8 @@ FAULT_TYPE="${1:-help}"
 NAMESPACE="default"
 DEPLOYMENT="nginx-test"
 
+export KUBECONFIG=/Users/sachinsingh/dev/sachinkumarsingh092/sre-agent/sre-agent-mvp/k8s/custom-kubeconfig.yaml
+
 usage() {
     echo "Usage: $0 <fault-type>"
     echo ""
