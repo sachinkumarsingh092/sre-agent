@@ -208,7 +208,7 @@ class MitigationAgent(SREAgent):
     def _rollback_all_actions(self) -> None:
         """Rollback all actions from the stack."""
         rollback_count = 0
-        while self.action_stack.stack:
+        while not self.action_stack.is_empty():
             if self.rollback_last_action():
                 rollback_count += 1
         if rollback_count > 0:
@@ -360,6 +360,7 @@ Start by executing the most likely fix using the actual resource names above."""
         """
         Execute a kubectl command for mitigation (with rollback tracking).
         """
+
         log_action(logger, f"KUBECTL (mitigation): {nl_query}")
         
         # Determine target namespace from alert or config
