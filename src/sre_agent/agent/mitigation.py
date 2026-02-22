@@ -6,7 +6,7 @@ import time
 from typing import Optional
 
 from .diagnosis import SREAgent, AgentContext
-from ..clients import LLMClient, KubeClient, PrometheusClient, CommandSafety
+from ..clients import LLMClient, KubeClient, PrometheusClient, CommandSafety, DryRunStatus
 from ..config import Config
 from ..models import (
     Alert,
@@ -378,6 +378,21 @@ Start by executing the most likely fix using the actual resource names above."""
         original_state = None
         
         if safety == CommandSafety.UNSAFE:
+            # Dry-run before executing unsafe commands
+            dry_result = self.kube.dry_run(command)
+            if dry_result.status == DryRunStatus.ERROR:
+                logger.warning(f"Dry-run failed: {dry_result.description}")
+                self.incident.add_timeline_entry(TimelineEntry.create(
+                    action_type=ActionType.VALIDATION,
+                    description=f"Command rejected by dry-run: {command}",
+                    input_data={"command": command},
+                    output_data={"dry_run_error": dry_result.description},
+                    success=False,
+                    error=dry_result.description,
+                ))
+                return f"Command rejected (dry-run failed): {dry_result.description}"
+            
+            logger.info(f"Dry-run passed: {dry_result.description}")
             original_state = self._capture_state_before_action(command)
             rollback_info = self._generate_rollback_info(command)
         
