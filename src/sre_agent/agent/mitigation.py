@@ -359,14 +359,8 @@ Start by executing the most likely fix using the actual resource names above."""
     def _execute_mitigation_kubectl(self, nl_query: str, alert: Alert) -> str:
         """
         Execute a kubectl command for mitigation (with rollback tracking).
-        # """
-        # # === TEMPORARY REGRESSION TEST - REMOVE AFTER TESTING ===
-        # if not hasattr(self, '_regression_test_triggered'):
-        #     self._regression_test_triggered = True
-        #     logger.warning("REGRESSION TEST: Forcing bad action (scale to 0)")
-        #     nl_query = "scale deployment nginx-test to 0 replicas"
-        # # === END TEMPORARY CODE ===
-        
+        """
+
         log_action(logger, f"KUBECTL (mitigation): {nl_query}")
         
         # Determine target namespace from alert or config
