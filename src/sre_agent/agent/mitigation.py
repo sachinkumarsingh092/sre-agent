@@ -266,10 +266,8 @@ Start by executing the most likely fix using the actual resource names above."""
 
         # Initialize conversation
         system_prompt = MITIGATION_SYSTEM_PROMPT.format(kubectl_examples=self.kubectl_examples)
-        context.messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": initial_prompt},
-        ]
+        context.memory.add({"role": "system", "content": system_prompt})
+        context.memory.add({"role": "user", "content": initial_prompt})
         
         # Mitigation loop
         actions_executed = 0
@@ -279,9 +277,18 @@ Start by executing the most likely fix using the actual resource names above."""
         while context.tool_calls < context.max_tool_calls:
             log_reasoning(logger, f"Mitigation step {context.tool_calls + 1}/{context.max_tool_calls}")
             
+            # Check for context compression before LLM call
+            logger.info(
+                f"Mitigation context: {context.memory.estimated_tokens()} tokens, "
+                f"{len(context.memory)} messages"
+            )
+            if context.memory.should_summarize():
+                logger.info("Summarizing mitigation context...")
+                context.memory.summarize_old_messages(self.llm)
+            
             # Get LLM response
-            response = self.llm.chat(context.messages)
-            context.messages.append({"role": "assistant", "content": response})
+            response = self.llm.chat(context.memory.get_messages_for_llm())
+            context.memory.add({"role": "assistant", "content": response})
             
             logger.debug(f"LLM Response: {response[:500]}...")
             
@@ -292,7 +299,7 @@ Start by executing the most likely fix using the actual resource names above."""
                 return actions_executed > 0
             
             if result is None:
-                context.messages.append({
+                context.memory.add({
                     "role": "user",
                     "content": "Please make a tool call (KUBECTL, WAIT, CHECK) or say DONE if finished."
                 })
@@ -302,7 +309,7 @@ Start by executing the most likely fix using the actual resource names above."""
                     repeat_count += 1
                     logger.warning(f"Repeated command in mitigation: {command_key}")
                     if repeat_count >= 2:
-                        context.messages.append({
+                        context.memory.add({
                             "role": "user",
                             "content": "STOP - You are repeating commands. The action was already executed. Please CHECK: to verify if alerts cleared, or say DONE: if mitigation is complete."
                         })
@@ -316,7 +323,7 @@ Start by executing the most likely fix using the actual resource names above."""
                 
                 if "executed" in result.lower() or "success" in result.lower():
                     actions_executed += 1
-                context.messages.append({"role": "user", "content": f"Result:\n{result}"})
+                context.memory.add({"role": "user", "content": f"Result:\n{result}"})
             
             context.tool_calls += 1
         
@@ -360,7 +367,6 @@ Start by executing the most likely fix using the actual resource names above."""
         """
         Execute a kubectl command for mitigation (with rollback tracking).
         """
-
         log_action(logger, f"KUBECTL (mitigation): {nl_query}")
         
         # Determine target namespace from alert or config

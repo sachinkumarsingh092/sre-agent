@@ -18,6 +18,7 @@ from ..models import (
 )
 from ..examples import get_kubectl_examples, get_prometheus_examples
 from ..logging_config import log_step, log_reasoning, log_action, log_success, log_error
+from .memory import ConversationMemory
 
 logger = logging.getLogger("sre_agent.agent")
 
@@ -72,12 +73,12 @@ The formatting should always be like this: ```promql
 class AgentContext:
     """Context maintained during agent execution."""
     
-    messages: list[dict] = field(default_factory=list)
+    memory: ConversationMemory = field(default_factory=ConversationMemory)
     observations: list[str] = field(default_factory=list)
     tool_calls: int = 0
     max_tool_calls: int = 15
-    command_history: list[str] = field(default_factory=list)  # Track executed commands
-    repeat_count: int = 0  # Count consecutive repeats
+    command_history: list[str] = field(default_factory=list)
+    repeat_count: int = 0
 
 
 class SREAgent:
@@ -213,18 +214,25 @@ Remember to make ONE tool call at a time."""
 
         # Initialize conversation
         system_prompt = DIAGNOSIS_SYSTEM_PROMPT.format(kubectl_examples=self.kubectl_examples)
-        context.messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": initial_prompt},
-        ]
+        context.memory.add({"role": "system", "content": system_prompt})
+        context.memory.add({"role": "user", "content": initial_prompt})
         
         # Diagnosis loop
         while context.tool_calls < context.max_tool_calls:
             log_reasoning(logger, f"Tool call {context.tool_calls + 1}/{context.max_tool_calls}")
             
+            # Check for context compression before LLM call
+            logger.info(
+                f"Context: {context.memory.estimated_tokens()} tokens, "
+                f"{len(context.memory)} messages"
+            )
+            if context.memory.should_summarize():
+                logger.info("Summarizing context to prevent overflow...")
+                context.memory.summarize_old_messages(self.llm)
+            
             # Get LLM response
-            response = self.llm.chat(context.messages)
-            context.messages.append({"role": "assistant", "content": response})
+            response = self.llm.chat(context.memory.get_messages_for_llm())
+            context.memory.add({"role": "assistant", "content": response})
             
             logger.debug(f"LLM Response: {response[:500]}...")
             
@@ -240,7 +248,7 @@ Remember to make ONE tool call at a time."""
                     return diagnosis
                 
                 # No valid tool call or diagnosis - prompt for action
-                context.messages.append({
+                context.memory.add({
                     "role": "user",
                     "content": "Please make a tool call (KUBECTL, METRICS) or provide your DIAGNOSE result."
                 })
@@ -257,7 +265,7 @@ Remember to make ONE tool call at a time."""
                     
                     if context.repeat_count >= 2:
                         # Force move forward
-                        context.messages.append({
+                        context.memory.add({
                             "role": "user",
                             "content": f"""STOP - You are repeating the same command. You already have this information from previous queries.
 
@@ -275,7 +283,7 @@ Based on this information, please provide your DIAGNOSE result now. Do NOT make 
                         context.command_history.append(command_key)
                 
                 # Add tool result to conversation
-                context.messages.append({"role": "user", "content": f"Tool result:\n{tool_result}"})
+                context.memory.add({"role": "user", "content": f"Tool result:\n{tool_result}"})
                 context.observations.append(tool_result)
             
             context.tool_calls += 1
@@ -284,12 +292,17 @@ Based on this information, please provide your DIAGNOSE result now. Do NOT make 
         self._diagnosis_observations = context.observations
         
         # Max tool calls reached - try to get final diagnosis
-        context.messages.append({
+        context.memory.add({
             "role": "user",
             "content": "You've reached the maximum number of tool calls. Please provide your DIAGNOSE result now based on the information gathered."
         })
         
-        response = self.llm.chat(context.messages)
+        logger.info(
+            f"Final context: {context.memory.estimated_tokens()} tokens, "
+            f"{len(context.memory)} messages"
+        )
+        
+        response = self.llm.chat(context.memory.get_messages_for_llm())
         return self._extract_diagnosis(response)
 
     def _parse_and_execute(self, response: str, alert: Alert, context: AgentContext) -> tuple[Optional[str], Optional[str]]:
