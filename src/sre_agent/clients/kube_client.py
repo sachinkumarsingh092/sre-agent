@@ -84,6 +84,40 @@ class DryRunStatus(str, Enum):
     SUCCESS = "success"
     NO_EFFECT = "no_effect"
     ERROR = "error"
+    NOT_SUPPORTED = "not_supported"
+
+
+# Commands that support --dry-run=server flag
+KUBECTL_DRY_RUN_SUPPORTED = [
+    "kubectl apply",
+    "kubectl create",
+    "kubectl delete",
+    "kubectl patch",
+    "kubectl replace",
+    "kubectl scale",
+    "kubectl set",
+    "kubectl run",
+    "kubectl label",
+    "kubectl annotate",
+    "kubectl autoscale",
+    "kubectl expose",
+]
+
+# Commands that don't support --dry-run flag
+KUBECTL_DRY_RUN_NOT_SUPPORTED = [
+    "kubectl rollout",
+    "kubectl exec",
+    "kubectl logs",
+    "kubectl attach",
+    "kubectl cp",
+    "kubectl port-forward",
+    "kubectl proxy",
+    "kubectl top",
+    "kubectl cordon",
+    "kubectl uncordon",
+    "kubectl drain",
+    "kubectl taint",
+]
 
 
 @dataclass
@@ -266,9 +300,37 @@ class KubeClient:
                 return_code=-1,
             )
 
+    def supports_dry_run(self, command: str) -> bool:
+        """
+        Check if a kubectl command supports the --dry-run flag.
+        
+        Args:
+            command: The kubectl command to check.
+            
+        Returns:
+            True if the command supports --dry-run, False otherwise.
+        """
+        command = command.strip()
+        
+        # Check if explicitly not supported
+        for not_supported in KUBECTL_DRY_RUN_NOT_SUPPORTED:
+            if command.startswith(not_supported):
+                return False
+        
+        # Check if explicitly supported
+        for supported in KUBECTL_DRY_RUN_SUPPORTED:
+            if command.startswith(supported):
+                return True
+        
+        # Default to not supported for unknown commands
+        return False
+
     def dry_run(self, command: str) -> DryRunResult:
         """
         Execute a kubectl command with --dry-run=server flag.
+        
+        For commands that don't support dry-run (e.g., kubectl rollout restart),
+        returns NOT_SUPPORTED status to allow the caller to decide how to proceed.
         
         Args:
             command: The kubectl command to dry-run.
@@ -276,6 +338,14 @@ class KubeClient:
         Returns:
             DryRunResult with status and output.
         """
+        # Check if command supports dry-run
+        if not self.supports_dry_run(command):
+            return DryRunResult(
+                status=DryRunStatus.NOT_SUPPORTED,
+                description=f"Command does not support dry-run validation",
+                output="",
+            )
+        
         # Add dry-run flag
         dry_run_cmd = self._insert_flag(command, "--dry-run=server")
         

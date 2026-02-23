@@ -208,7 +208,7 @@ class MitigationAgent(SREAgent):
     def _rollback_all_actions(self) -> None:
         """Rollback all actions from the stack."""
         rollback_count = 0
-        while self.action_stack.stack:
+        while not self.action_stack.is_empty():
             if self.rollback_last_action():
                 rollback_count += 1
         if rollback_count > 0:
@@ -359,8 +359,14 @@ Start by executing the most likely fix using the actual resource names above."""
     def _execute_mitigation_kubectl(self, nl_query: str, alert: Alert) -> str:
         """
         Execute a kubectl command for mitigation (with rollback tracking).
-        """
-
+        # """
+        # # === TEMPORARY REGRESSION TEST - REMOVE AFTER TESTING ===
+        # if not hasattr(self, '_regression_test_triggered'):
+        #     self._regression_test_triggered = True
+        #     logger.warning("REGRESSION TEST: Forcing bad action (scale to 0)")
+        #     nl_query = "scale deployment nginx-test to 0 replicas"
+        # # === END TEMPORARY CODE ===
+        
         log_action(logger, f"KUBECTL (mitigation): {nl_query}")
         
         # Determine target namespace from alert or config
@@ -431,8 +437,11 @@ Start by executing the most likely fix using the actual resource names above."""
                     error=dry_result.description,
                 ))
                 return f"Command rejected (dry-run failed): {dry_result.description}"
+            elif dry_result.status == DryRunStatus.NOT_SUPPORTED:
+                logger.info(f"Dry-run not supported for command, proceeding: {command}")
+            else:
+                logger.info(f"Dry-run passed: {dry_result.description}")
             
-            logger.info(f"Dry-run passed: {dry_result.description}")
             original_state = self._capture_state_before_action(command)
             rollback_info = self._generate_rollback_info(command)
         
