@@ -4,10 +4,13 @@ Generates interactive HTML reports with Mermaid.js flowcharts.
 Zero Python dependencies - uses CDN-hosted Mermaid.js.
 """
 
+import logging
 from dataclasses import asdict
 from pathlib import Path
 from string import Template
 from typing import Any, Union
+
+logger = logging.getLogger("sre_agent.visualization")
 
 
 HTML_TEMPLATE = Template("""<!DOCTYPE html>
@@ -655,8 +658,8 @@ def generate_component_topology(incident_dict: dict) -> str:
     
     lines = ["graph TB"]
     
-    namespace = _escape_mermaid(components["namespace"])
-    node_name = _escape_mermaid(components.get("node", "cluster-node"))
+    namespace = _escape_mermaid(components["namespace"]) or "default"
+    node_name = _escape_mermaid(components.get("node") or "cluster-node")
     
     # Outer: Node subgraph
     lines.append(f'    subgraph NODE["{node_name}"]')
@@ -934,5 +937,7 @@ def save_report(incident: Union[dict, Any], output_dir: str = ".") -> str:
 
     filepath = output_path / f"rca_report_{incident_id}.html"
     filepath.write_text(html, encoding="utf-8")
+
+    logger.info(f"RCA report saved: {filepath}")
 
     return str(filepath)
