@@ -180,15 +180,16 @@ class IncidentState:
         self.retry_count += 1
         self.updated_at = datetime.utcnow().isoformat()
 
-    def save(self, output_dir: str) -> str:
+    def save(self, output_dir: str, generate_html: bool = True) -> str:
         """
-        Save incident state to JSON file.
+        Save incident state to JSON file and optionally generate HTML report.
         
         Args:
             output_dir: Directory to save the incident file.
+            generate_html: Whether to generate HTML RCA report (default: True).
             
         Returns:
-            Path to the saved file.
+            Path to the saved JSON file.
         """
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
@@ -198,6 +199,14 @@ class IncidentState:
         
         with open(filepath, "w") as f:
             json.dump(asdict(self), f, indent=2, default=str)
+        
+        # Generate HTML report alongside JSON
+        if generate_html:
+            try:
+                from .visualization import save_report
+                save_report(self, output_dir)
+            except Exception:
+                pass  # Don't fail incident save if report generation fails
         
         return str(filepath)
 
