@@ -3,12 +3,11 @@
 # vLLM endpoint configuration
 llm:
   base_url: "http://167.99.183.126:8000/v1"
-  model: "openai/gpt-oss-120b"
+  model: "mistralai/Magistral-Small-2507"
   temperature: 0.0
   max_tokens: 8192
   # Reasoning model settings
-  is_reasoning_model: true
-  reasoning_effort: "low" 
+  is_reasoning_model: true 
 
 # Kubernetes configuration
 kubernetes:

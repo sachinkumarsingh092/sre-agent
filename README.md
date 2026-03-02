@@ -4,7 +4,7 @@ Lightweight Kubernetes SRE Agent for incident diagnosis and mitigation using loc
 
 ## Features
 
-- **Local LLM**: Uses vLLM with openai/gpt-oss-120b (no external API dependencies)
+- **Local LLM**: Uses vLLM with mistralai/Magistral-Small-2507 (no external API dependencies)
 - **Kubernetes Operations**: Pod-level diagnosis and mitigation with rollback support
 - **Prometheus Integration**: Alert detection and metric queries
 - **Fail-Fast**: Validates all connections on startup
@@ -15,11 +15,11 @@ Lightweight Kubernetes SRE Agent for incident diagnosis and mitigation using loc
 
 ### Prerequisites
 
-1. **vLLM** running locally with openai/gpt-oss-120b:
+1. **vLLM** running locally with mistralai/Magistral-Small-2507:
    ```bash
    $ uv pip install vllm==0.10.1   --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
    $ apt-get install python3-dev
-   $ vllm serve openai/gpt-oss-120b --gpu-memory-utilization 0.95   --enforce-eager   --max-model-len 16384
+   $ vllm serve mistralai/Magistral-Small-2507 --gpu-memory-utilization 0.95   --enforce-eager   --max-model-len 16384
    ```
 
 2. **Kubernetes cluster** (kind, minikube, or remote) with kubeconfig
@@ -39,7 +39,7 @@ Edit `config.yaml` to match your environment:
 ```yaml
 llm:
   base_url: "http://<droplet-ip>:8000/v1"
-  model: "openai/gpt-oss-120b"
+  model: "mistralai/Magistral-Small-2507"
 
 kubernetes:
   kubeconfig: "~/.kube/config"
@@ -100,8 +100,8 @@ sre-agent --exit-on-idle 2
         │                              │                      │
         ▼                              ▼                      ▼
 ┌───────────────┐            ┌─────────────────┐    ┌────────────────┐
-│  Prometheus   │            │   Kubernetes    │    │     vLLM       │
-│   (metrics)   │            │   (kubectl)     │    │ (Qwen2.5-7B)   │
+│  Prometheus   │            │   Kubernetes    │    │      vLLM        │
+│   (metrics)   │            │   (kubectl)     │    │ (Magistral-Small)│
 └───────────────┘            └─────────────────┘    └────────────────┘
 ```
 

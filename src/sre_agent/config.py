@@ -14,12 +14,12 @@ class LLMConfig:
     """LLM/vLLM endpoint configuration."""
 
     base_url: str = "http://localhost:8000/v1"
-    model: str = "Qwen/Qwen2.5-7B-Instruct"
+    model: str = "mistralai/Magistral-Small-2507"
     temperature: float = 0.1
     max_tokens: int = 4096
     # Reasoning model support
     is_reasoning_model: bool = False  # Set to true for o1/gpt-oss style models
-    reasoning_effort: str = "medium"  # low, medium, high (for reasoning models)
+    reasoning_effort: Optional[str] = None  # low, medium, high (for models that support it)
 
 
 @dataclass

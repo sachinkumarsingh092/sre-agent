@@ -124,8 +124,8 @@ class LLMClient:
                 # - May support reasoning_effort
                 request_params["max_completion_tokens"] = tokens
                 
-                # Add reasoning_effort if supported
-                reasoning_effort = getattr(self.config, 'reasoning_effort', 'medium')
+                # Add reasoning_effort if explicitly configured (not all models support it)
+                reasoning_effort = getattr(self.config, 'reasoning_effort', None)
                 if reasoning_effort:
                     request_params["reasoning_effort"] = reasoning_effort
                     
